@@ -10,7 +10,8 @@ import PendingVerification from './pages/user/PendingVerification';
 import Submissions from './pages/user/Submissions';
 import Transactions from './pages/user/Transactions';
 import Leaderboard from './pages/user/Leaderboard';
-import SellGmail from './pages/user/SellGmail';
+// FIX: Changed import path casing to resolve file conflict.
+import SellGmail from './pages/user/sellGmail';
 import WithdrawalRules from './pages/user/WithdrawalRules';
 import WithdrawalFAQ from './pages/user/WithdrawalFAQ';
 
