@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useCallback, useMemo, PropsWithChildren, useEffect } from 'react';
-import { User, Job, Transaction, AppSettings, JobSubmission, Notice, Notification } from '../types';
+import { User, Job, Transaction, AppSettings, JobSubmission, Notice, Notification, GmailSubmission } from '../types';
 
 // MOCK DATA
 const initialUsers: User[] = [
@@ -49,10 +49,15 @@ const initialSettings: AppSettings = {
     },
     verificationFee: 40,
     referralBonus: 20,
+    gmailSellPrice: 50,
 }
 
 const initialJobSubmissions: JobSubmission[] = [
     { id: 1, userId: 1, userName: 'Azim', jobId: 1, jobTitle: 'Registration Job (1)', proofs: [{ type: 'image', label: 'Screenshot 1', value: 'https://i.ibb.co/pnv6b6x/proof-1.png' }, { type: 'image', label: 'Screenshot 2', value: 'https://i.ibb.co/SRs0pLS/proof-2.png' }, { type: 'text', label: 'Email used', value: 'azim@demo.com' }], status: 'pending', submittedDate: new Date('2024-08-01').toISOString()}
+];
+
+const initialGmailSubmissions: GmailSubmission[] = [
+    { id: 1, userId: 1, userName: 'Azim', gmailAddress: 'example.azim@gmail.com', password: 'password123', recoveryPhone: '01711111111', status: 'pending', submittedDate: new Date().toISOString() }
 ];
 
 const initialNotices: Notice[] = [
@@ -85,6 +90,7 @@ interface DataContextType {
   transactions: Transaction[];
   appSettings: AppSettings;
   jobSubmissions: JobSubmission[];
+  gmailSubmissions: GmailSubmission[];
   notices: Notice[];
   notifications: Notification[];
   login: (identifier: string, pass: string) => User | null;
@@ -100,6 +106,8 @@ interface DataContextType {
   updateAppSettings: (newSettings: AppSettings) => void;
   addJobSubmission: (submission: Omit<JobSubmission, 'id' | 'submittedDate' | 'userName' | 'userId'>) => void;
   updateJobSubmissionStatus: (id: number, status: 'approved' | 'rejected') => void;
+  addGmailSubmission: (submission: Omit<GmailSubmission, 'id' | 'submittedDate' | 'userName' | 'userId' | 'status'>) => void;
+  updateGmailSubmissionStatus: (id: number, status: 'approved' | 'rejected', price?: number, reason?: string) => void;
   addNotice: (notice: Omit<Notice, 'id' | 'date'>) => void;
   updateNotice: (notice: Notice) => void;
   deleteNotice: (id: number) => void;
@@ -118,6 +126,7 @@ export const DataProvider = ({ children }: PropsWithChildren) => {
   const [transactions, setTransactions] = useState<Transaction[]>(() => getFromStorage('transactions', initialTransactions));
   const [appSettings, setAppSettings] = useState<AppSettings>(() => getFromStorage('appSettings', initialSettings));
   const [jobSubmissions, setJobSubmissions] = useState<JobSubmission[]>(() => getFromStorage('jobSubmissions', initialJobSubmissions));
+  const [gmailSubmissions, setGmailSubmissions] = useState<GmailSubmission[]>(() => getFromStorage('gmailSubmissions', initialGmailSubmissions));
   const [notices, setNotices] = useState<Notice[]>(() => getFromStorage('notices', initialNotices));
   const [notifications, setNotifications] = useState<Notification[]>(() => getFromStorage('notifications', []));
 
@@ -127,6 +136,7 @@ export const DataProvider = ({ children }: PropsWithChildren) => {
   useEffect(() => { saveToStorage('transactions', transactions) }, [transactions]);
   useEffect(() => { saveToStorage('appSettings', appSettings) }, [appSettings]);
   useEffect(() => { saveToStorage('jobSubmissions', jobSubmissions) }, [jobSubmissions]);
+  useEffect(() => { saveToStorage('gmailSubmissions', gmailSubmissions) }, [gmailSubmissions]);
   useEffect(() => { saveToStorage('notices', notices) }, [notices]);
   useEffect(() => { saveToStorage('notifications', notifications) }, [notifications]);
 
@@ -427,6 +437,67 @@ export const DataProvider = ({ children }: PropsWithChildren) => {
     });
   }, [jobs, currentUser, transactions]);
 
+  const addGmailSubmission = useCallback((submission: Omit<GmailSubmission, 'id' | 'submittedDate' | 'userName' | 'userId' | 'status'>) => {
+    if (!currentUser) return;
+    const newSubmission: GmailSubmission = {
+        id: Math.max(0, ...gmailSubmissions.map(s => s.id), 0) + 1,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        submittedDate: new Date().toISOString(),
+        status: 'pending',
+        ...submission
+    };
+    setGmailSubmissions(prev => [newSubmission, ...prev]);
+    addNotification({
+        type: 'submission',
+        message: `${currentUser.name} submitted a Gmail account for sale.`,
+        link: '/admin/gmail-sales'
+    });
+  }, [currentUser, gmailSubmissions, addNotification]);
+
+  const updateGmailSubmissionStatus = useCallback((id: number, status: 'approved' | 'rejected', price?: number, reason?: string) => {
+    setGmailSubmissions(prevSubs => {
+        const updatedSubs = [...prevSubs];
+        const subIndex = updatedSubs.findIndex(s => s.id === id);
+        if (subIndex === -1) return prevSubs;
+
+        const sub = updatedSubs[subIndex];
+        if (sub.status !== 'pending') return prevSubs;
+
+        updatedSubs[subIndex] = { ...sub, status, price: status === 'approved' ? price : undefined, rejectionReason: status === 'rejected' ? reason : undefined };
+
+        if (status === 'approved' && price && price > 0) {
+            setUsers(prevUsers => {
+                const newUsers = [...prevUsers];
+                const userIndex = newUsers.findIndex(u => u.id === sub.userId);
+                if (userIndex !== -1) {
+                    const user = { ...newUsers[userIndex] };
+                    user.wallets = { ...user.wallets, gmail: user.wallets.gmail + price };
+                    newUsers[userIndex] = user;
+
+                    if (currentUser && currentUser.id === user.id) {
+                        setCurrentUser(user);
+                    }
+                    
+                    const newTx: Transaction = {
+                        id: Math.max(0, ...transactions.map(t => t.id), 0) + 1,
+                        userId: sub.userId,
+                        userName: sub.userName,
+                        type: 'job-reward',
+                        amount: price,
+                        status: 'approved',
+                        date: new Date().toISOString(),
+                        details: `For selling Gmail: ${sub.gmailAddress}`
+                    };
+                    setTransactions(prevTx => [newTx, ...prevTx]);
+                }
+                return newUsers;
+            });
+        }
+        return updatedSubs;
+    });
+  }, [users, currentUser, transactions]);
+
   const addNotice = useCallback((notice: Omit<Notice, 'id' | 'date'>) => {
     const newNotice: Notice = {
         id: Math.max(0, ...notices.map(n => n.id), 0) + 1,
@@ -507,16 +578,16 @@ export const DataProvider = ({ children }: PropsWithChildren) => {
 
 
   const value = useMemo(() => ({
-    currentUser, users, jobs, transactions, appSettings, jobSubmissions, notices, notifications,
+    currentUser, users, jobs, transactions, appSettings, jobSubmissions, gmailSubmissions, notices, notifications,
     login, signup, logout, updateUserPassword, addTransaction, updateTransactionStatus,
     updateUserBalance, updateUserProJobStatus, addJob, deleteJob, updateAppSettings, addJobSubmission,
-    updateJobSubmissionStatus, addNotice, updateNotice, deleteNotice, toggleUserBlockStatus, markNotificationsAsRead,
+    updateJobSubmissionStatus, addGmailSubmission, updateGmailSubmissionStatus, addNotice, updateNotice, deleteNotice, toggleUserBlockStatus, markNotificationsAsRead,
     sendBonusToUser, toggleUserWithdrawalFreeze,
   }), [
-    currentUser, users, jobs, transactions, appSettings, jobSubmissions, notices, notifications,
+    currentUser, users, jobs, transactions, appSettings, jobSubmissions, gmailSubmissions, notices, notifications,
     login, signup, logout, updateUserPassword, addTransaction, updateTransactionStatus,
     updateUserBalance, updateUserProJobStatus, addJob, deleteJob, updateAppSettings, addJobSubmission,
-    updateJobSubmissionStatus, addNotice, updateNotice, deleteNotice, toggleUserBlockStatus, markNotificationsAsRead,
+    updateJobSubmissionStatus, addGmailSubmission, updateGmailSubmissionStatus, addNotice, updateNotice, deleteNotice, toggleUserBlockStatus, markNotificationsAsRead,
     sendBonusToUser, toggleUserWithdrawalFreeze,
   ]);
   
