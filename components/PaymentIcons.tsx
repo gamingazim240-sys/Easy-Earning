@@ -1,4 +1,3 @@
-
 export const BkashIcon = () => (
     <svg width="60" height="25" viewBox="0 0 100 40" xmlns="http://www.w3.org/2000/svg" fill="#DF146E">
         <text x="50" y="25" fontSize="20" textAnchor="middle" fontWeight="bold" fontFamily="Arial, sans-serif">bKash</text>
