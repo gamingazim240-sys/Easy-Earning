@@ -15,7 +15,7 @@ const initialJobs: Job[] = [
   { 
     id: 1, 
     title: 'Registration Job (1) / রেজিস্ট্রেশন জব (1)', 
-    description: '👇 Click on "Go To Task" below. You will be asked 2/3 questions. After answering correctly, you will be asked to spin. Once the spin is complete, you will be taken to a new website. Complete the registration on that website.\n\n👇 নিচের Go To Task এর উপর ক্লিক করার পর আপনাকে ২/৩ টা প্রশ্ন করবে প্রশ্নের সঠিক উত্তর দেওয়ার পর স্পিন করতে বলবে স্পิน সম্পূর্ণ হলে আপনাকে নতুন একটি ওয়েব সাইটে নিয়ে যাবে সেই ওয়েবসাইটের রেজিস্ট্রেশন সম্পন্ন করুন।', 
+    description: '👇 Click on "Go To Task" below. You will be asked 2/3 questions. After answering correctly, you will be asked to spin. Once the spin is complete, you will be taken to a new website. Complete the registration on that website.\n\n👇 নিচের Go To Task এর উপর ক্লিক করার পর আপনাকে ২/৩ টা প্রশ্ন করবে প্রশ্নের সঠিক উত্তর দেওয়ার পর স্পิน করতে বলবে স্পิน সম্পূর্ণ হলে আপনাকে নতুন একটি ওয়েব সাইটে নিয়ে যাবে সেই ওয়েবসাইটের রেজিস্ট্রেশন সম্পন্ন করুন।', 
     thumbnail: 'https://i.ibb.co/Fz9WpW9/job-thumbnail-1.png', 
     likes: '11k', 
     views: '12k', 
@@ -215,6 +215,19 @@ export const DataProvider = ({ children }: PropsWithChildren) => {
 
   const addTransaction = useCallback((tx: Omit<Transaction, 'id' | 'date' | 'userName' | 'userId'>) => {
     if (!currentUser) return;
+
+    if (tx.type === 'withdrawal') {
+        const updatedUser = {
+            ...currentUser,
+            wallets: {
+                ...currentUser.wallets,
+                jobBalance: currentUser.wallets.jobBalance - tx.amount
+            }
+        };
+        setCurrentUser(updatedUser);
+        setUsers(prev => prev.map(u => u.id === currentUser.id ? updatedUser : u));
+    }
+
     const newTx: Transaction = {
         id: Math.max(0, ...transactions.map(t => t.id), 0) + 1,
         userId: currentUser.id,
@@ -222,7 +235,9 @@ export const DataProvider = ({ children }: PropsWithChildren) => {
         date: new Date().toISOString(),
         ...tx
     };
+
     setTransactions(prev => [newTx, ...prev]);
+
     if (newTx.type === 'deposit') {
         addNotification({
             type: 'deposit',
@@ -290,11 +305,11 @@ export const DataProvider = ({ children }: PropsWithChildren) => {
             
             return updatedUsersList;
         });
-    } else if (transactionToProcess.type === 'withdrawal' && status === 'approved') {
+    } else if (transactionToProcess.type === 'withdrawal' && status === 'rejected') {
          setUsers(prevUsers => {
             const updatedUsersList = prevUsers.map(u => {
                 if (u.id === transactionToProcess!.userId) {
-                     return { ...u, wallets: { ...u.wallets, jobBalance: u.wallets.jobBalance - transactionToProcess!.amount } };
+                     return { ...u, wallets: { ...u.wallets, jobBalance: u.wallets.jobBalance + transactionToProcess!.amount } };
                 }
                 return u;
             });
