@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { Transaction } from '../../types';
 
@@ -15,6 +16,8 @@ const TransactionIcon = ({ type }: { type: Transaction['type'] }) => {
 
 const Transactions = () => {
     const { currentUser, transactions } = useData();
+    const location = useLocation();
+    const successMessage = location.state?.message;
 
     const userTransactions = useMemo(() => {
         if (!currentUser) return [];
@@ -26,6 +29,14 @@ const Transactions = () => {
     return (
         <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Transaction History</h2>
+            
+            {successMessage && (
+                <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md" role="alert">
+                    <p className="font-bold">Success!</p>
+                    <p>{successMessage}</p>
+                </div>
+            )}
+
             <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-500">
@@ -67,5 +78,7 @@ const Transactions = () => {
         </div>
     );
 };
+
+export default Transactions;
 
 export default Transactions;
