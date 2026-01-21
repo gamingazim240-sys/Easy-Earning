@@ -10,6 +10,7 @@ import PendingVerification from './pages/user/PendingVerification';
 import Submissions from './pages/user/Submissions';
 import Transactions from './pages/user/Transactions';
 import Leaderboard from './pages/user/Leaderboard';
+import SellGmail from './pages/user/SellGmail';
 import WithdrawalRules from './pages/user/WithdrawalRules';
 import WithdrawalFAQ from './pages/user/WithdrawalFAQ';
 
@@ -20,6 +21,7 @@ import ManageJobs from './pages/admin/ManageJobs';
 import ManageDeposits from './pages/admin/ManageDeposits';
 import ManageWithdrawals from './pages/admin/ManageWithdrawals';
 import ManageSubmissions from './pages/admin/ManageSubmissions';
+import ManageGmailSales from './pages/admin/ManageGmailSales';
 import Settings from './pages/admin/Settings';
 import ManageNotices from './pages/admin/ManageNotices';
 import SendBonus from './pages/admin/SendBonus';
@@ -57,6 +59,7 @@ const AppRoutes = () => {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="submissions" element={<Submissions />} />
+          <Route path="sell-gmail" element={<SellGmail />} />
           <Route path="withdraw" element={<Withdraw />} />
           <Route path="withdrawal-rules" element={<WithdrawalRules />} />
           <Route path="withdrawal-faq" element={<WithdrawalFAQ />} />
@@ -75,6 +78,7 @@ const AppRoutes = () => {
           <Route path="users" element={<ManageUsers />} />
           <Route path="jobs" element={<ManageJobs />} />
           <Route path="submissions" element={<ManageSubmissions />} />
+          <Route path="gmail-sales" element={<ManageGmailSales />} />
           <Route path="deposits" element={<ManageDeposits />} />
           <Route path="withdrawals" element={<ManageWithdrawals />} />
           <Route path="settings" element={<Settings />} />
