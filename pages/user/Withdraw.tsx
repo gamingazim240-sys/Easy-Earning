@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 type PaymentMethodType = 'bkash' | 'nagad' | 'rocket';
 
@@ -15,10 +15,12 @@ const withdrawalPackages = [
 
 const Withdraw = () => {
     const { currentUser, addTransaction, appSettings } = useData();
+    const navigate = useNavigate();
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType>('nagad');
     const [withdrawalNumber, setWithdrawalNumber] = useState('');
     const [selectedPackage, setSelectedPackage] = useState<(typeof withdrawalPackages[0]) | null>(null);
     const [statusMessage, setStatusMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     if (!currentUser) return null;
 
@@ -37,37 +39,44 @@ const Withdraw = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (isLoading) return;
+
         setStatusMessage('');
+        setIsLoading(true);
 
         if (!currentUser.isVerified) {
             setStatusMessage('Please verify your account to make a withdrawal.');
+            setIsLoading(false);
             return;
         }
 
         if (!selectedPackage) {
             setStatusMessage('Please select a withdrawal amount.');
+            setIsLoading(false);
             return;
         }
         if (!withdrawalNumber.trim() || !/^\d{11}$/.test(withdrawalNumber)) {
             setStatusMessage('Please enter a valid 11-digit number.');
+            setIsLoading(false);
             return;
         }
         if (currentBalance < selectedPackage.amount) {
             setStatusMessage('Insufficient balance.');
+            setIsLoading(false);
             return;
         }
-
-        addTransaction({
-            type: 'withdrawal',
-            amount: selectedPackage.amount,
-            status: 'pending',
-            withdrawalNumber: withdrawalNumber,
-            paymentMethod: paymentMethod,
-        });
         
-        setStatusMessage('Withdrawal request submitted successfully!');
-        setSelectedPackage(null);
-        setWithdrawalNumber('');
+        // Simulate API call and redirect
+        setTimeout(() => {
+            addTransaction({
+                type: 'withdrawal',
+                amount: selectedPackage.amount,
+                status: 'pending',
+                withdrawalNumber: withdrawalNumber,
+                paymentMethod: paymentMethod,
+            });
+            navigate('/user/transactions', { state: { message: 'Withdrawal request submitted successfully!' } });
+        }, 1000);
     };
 
     return (
@@ -120,7 +129,7 @@ const Withdraw = () => {
                                 key={pkg.amount}
                                 type="button"
                                 onClick={() => setSelectedPackage(pkg)}
-                                className={`p-3 border-2 rounded-lg text-left transition text-sm ${selectedPackage?.amount === pkg.amount ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-white hover:border-blue-400'}`}
+                                className={`p-3 border-2 rounded-lg text-left transition-all duration-200 text-sm transform active:scale-95 ${selectedPackage?.amount === pkg.amount ? 'bg-blue-600 text-white border-blue-600 shadow-lg scale-105' : 'bg-white hover:border-blue-400'}`}
                             >
                                 <p className="font-bold text-xl">৳ {pkg.amount}</p>
                                 <p className={selectedPackage?.amount === pkg.amount ? 'text-blue-100' : 'text-gray-500'}>Charge: ৳ {pkg.charge}</p>
@@ -134,9 +143,22 @@ const Withdraw = () => {
                     <p className={`text-sm text-center font-semibold py-2 rounded-lg ${statusMessage.includes('successfully') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{statusMessage}</p>
                 )}
 
-                <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/50">
-                    <i className="fa-solid fa-paper-plane"></i>
-                    <span>Confirm Withdrawal / উত্তোলন নিশ্চিত করুন</span>
+                <button 
+                    type="submit" 
+                    className="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2 shadow-lg shadow-blue-500/50 disabled:bg-blue-400 disabled:cursor-not-allowed"
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                            <span>Processing...</span>
+                        </>
+                    ) : (
+                        <>
+                            <i className="fa-solid fa-paper-plane"></i>
+                            <span>Confirm Withdrawal / উত্তোলন নিশ্চিত করুন</span>
+                        </>
+                    )}
                 </button>
             </form>
             
