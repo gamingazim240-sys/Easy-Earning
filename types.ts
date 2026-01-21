@@ -1,4 +1,4 @@
-export interface User {
+  export interface User {
   id: number;
   name: string;
   email: string;
@@ -75,6 +75,19 @@ export interface JobSubmission {
   submittedDate: string; // ISO date string
 }
 
+export interface GmailSubmission {
+  id: number;
+  userId: number;
+  userName: string;
+  gmailAddress: string;
+  password: string;
+  recoveryPhone: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedDate: string; // ISO date string
+  price?: number; // Set by admin on approval
+  rejectionReason?: string; // For rejection
+}
+
 export interface AppSettings {
   paymentNumbers: {
     bkash: string;
@@ -87,6 +100,7 @@ export interface AppSettings {
   };
   verificationFee: number;
   referralBonus: number;
+  gmailSellPrice: number;
 }
 
 export interface Notice {
